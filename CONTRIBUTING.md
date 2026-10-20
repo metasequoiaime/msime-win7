@@ -15,6 +15,27 @@
 
 Boost 按 `-DBoost_ROOT=...` → 环境变量 `BOOST_ROOT` → `%USERPROFILE%\scoop\apps\boost\current` 的顺序解析。preset 里的 vcpkg 路径取自 `$env{VCPKG_ROOT}`，不需要改文件。
 
+### 没有本地工具链时：dev-build-win7 workflow
+
+只想验证一个小改动、不想为它装一整套工具链的话，让 CI 编。`Dev build (Windows 7)` 是这个仓专有的构建通道，跑在 windows-2022 的 v143 工具集上，出 Win7 可安装的包；develop 和 main 不触发。
+
+```powershell
+# 特性分支一推就自动编，不需要任何手动操作
+git push -u origin fix/xxx
+
+# 或者手动触发，可选单个组件快速迭代
+gh workflow run dev-build-win7.yml --ref <你的分支> -f component=all
+
+# 等 run 结束拿产物
+gh run list --workflow=dev-build-win7.yml --branch <你的分支> --limit 1 --json databaseId,status
+gh run watch <runId> --exit-status
+gh run download <runId> -n dev-installer-win7
+```
+
+开向 develop 的 PR 也会自动跑一次。产物名带 `_win7` 后缀，签名是本次运行现场生成的自签名证书，装之前要在管理员 PowerShell 里跑一次 `import-dev-trust.ps1`，再双击安装包。版本号带 `-dev.<日期>.<commit>`，设置页的更新检查不会提示它升级。
+
+几个边界：`workflow_dispatch` 需要仓库写权限；fork PR 的构建用 `pull_request` 触发（只读 token，无 secrets），首个 run 要维护者点一次批准；`component=tip` 或 `server` 只编译单个组件出裸二进制；这个 workflow 不出 release、不碰更新清单，合并门槛仍然由 PR 上的 CI 把守。Win7 构建的功能裁剪范围与前置补丁（KB2670838、KB3140245）见 PR 说明。
+
 ## 取代码
 
 ```powershell
