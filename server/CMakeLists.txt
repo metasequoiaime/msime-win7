@@ -234,6 +234,8 @@ set(SRC_FILES
     "./src/cloud/cloud_translation.h"
     "./src/cloud/custom_translation.cpp"
     "./src/cloud/custom_translation.h"
+    "./src/cloud/aliyun_mt.cpp"
+    "./src/cloud/aliyun_mt.h"
     "./src/cloud/niutrans_translation.cpp"
     "./src/cloud/niutrans_translation.h"
     "./src/cloud/tencent_tmt.cpp"
@@ -296,6 +298,13 @@ set(SRC_FILES
     "./src/settings/api_credential_test_request.h"
     "./src/settings/collocation_model.cpp"
     "./src/settings/collocation_model.h"
+    # 后台检查更新与自动下载：轮询跑在常驻的 Server 上，关掉设置窗口也不中断。
+    "./src/settings/update_channel.cpp"
+    "./src/settings/update_channel.h"
+    "./src/settings/update_check.cpp"
+    "./src/settings/update_check.h"
+    "./src/settings/native/native_settings_update_download.cpp"
+    "./src/settings/native/native_settings_update_download.h"
     "./src/skin/candidate_skin_catalog.cpp"
     "./src/skin/candidate_skin_catalog.h"
     "./src/session/engine_input_session.cpp"
@@ -347,6 +356,8 @@ set(SRC_FILES
     "./src/window/tray_menu_presenter.h"
     "./src/window/floating_toolbar_presenter.cpp"
     "./src/window/floating_toolbar_presenter.h"
+    "./src/window/floating_toolbar_image_layout.cpp"
+    "./src/window/floating_toolbar_image_layout.h"
     "./src/window/floating_toolbar_skin.cpp"
     "./src/window/floating_toolbar_skin.h"
     "./src/window/caret_state_indicator.cpp"
@@ -374,6 +385,13 @@ set(SRC_FILES
     "./src/voice-input/cue_player.h"
     "./src/voice-input/mvi_utils.h"
     "./src/voice-input/voice_input_overlay_utils.cpp"
+    "./src/voice-input/voice_target.cpp"
+    "./src/voice-input/voice_target.h"
+    "./src/voice-input/voice_result_card.cpp"
+    "./src/voice-input/voice_result_card.h"
+    "./src/voice-input/voice_result_card_model.h"
+    "./src/voice-input/voice_overlay_layout.h"
+    "./src/voice-input/voice_commit_policy.h"
     "./src/main.cpp"
 )
 
@@ -410,7 +428,14 @@ add_dependencies(${PROJECT_NAME} Dictionaries)
 target_link_libraries(${PROJECT_NAME} PRIVATE winhttp)
 target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
 target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
-target_link_libraries(${PROJECT_NAME} PRIVATE d2d1 dwrite dwmapi shell32 ole32 bcrypt)
+# shcore 只在上游的 Win10 目标里链，Win7 目标没有那个 DLL，见下方 MSIME_WIN7 分支。
+if(MSIME_WIN7)
+    # Win7 上没有 SHCORE.dll（Windows 8.1 起才有），取 DPI 走 compat 层的 GetProcAddress。
+    target_link_libraries(${PROJECT_NAME} PRIVATE d2d1 dwrite dwmapi shell32 ole32 bcrypt)
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE d2d1 dwrite dwmapi shell32 shcore ole32 bcrypt)
+    target_link_libraries(${PROJECT_NAME} PRIVATE oleaut32)
+endif()
 
 # The helper executables below already build at /W4. The server itself -- the process that owns
 # every network call and the skin loader -- was still at the default /W3.
@@ -542,6 +567,11 @@ set(SETTINGS_SOURCES
     "./src/settings/default_input_method.h"
     "./src/settings/game_compat_name.cpp"
     "./src/settings/game_compat_name.h"
+    "./src/settings/input_method_install.cpp"
+    "./src/settings/input_method_install.h"
+    # 设置页要判断通道、读后台下载的结果，只用到通道判定与状态文件，不引轮询线程。
+    "./src/settings/update_channel.cpp"
+    "./src/settings/update_channel.h"
     "./src/settings/settings_launcher.cpp"
     "./src/settings/settings_launcher.h"
     "./src/settings/native/native_settings_bindings.cpp"
@@ -550,6 +580,10 @@ set(SETTINGS_SOURCES
     "./src/settings/native/native_settings_model.cpp"
     "./src/settings/native/native_settings_model.h"
     "./src/settings/native/native_settings_pages.h"
+    "./src/settings/native/native_settings_search.cpp"
+    "./src/settings/native/native_settings_search.h"
+    "./src/settings/native/native_settings_pill.cpp"
+    "./src/settings/native/native_settings_pill.h"
     "./src/settings/native/native_settings_theme.cpp"
     "./src/settings/native/native_settings_theme.h"
     "./src/settings/native/native_settings_window.cpp"
@@ -578,6 +612,8 @@ set(SETTINGS_SOURCES
     "./src/settings/native/native_page_help_widgets.cpp"
     "./src/settings/native/native_page_help_widgets.h"
     "./src/settings/native/native_page_about.cpp"
+    "./src/settings/native/native_settings_update_download.cpp"
+    "./src/settings/native/native_settings_update_download.h"
     "./src/settings/native/native_page_feedback.cpp"
     "./src/skin/candidate_skin_catalog.cpp"
     "./src/skin/candidate_skin_catalog.h"
@@ -592,6 +628,8 @@ set(SETTINGS_SOURCES
     "./src/window/candidate_skin_scene.h"
     "./src/window/candidate_skin_tokens.cpp"
     "./src/window/candidate_skin_tokens.h"
+    "./src/window/floating_toolbar_image_layout.cpp"
+    "./src/window/floating_toolbar_image_layout.h"
     "./src/window/floating_toolbar_skin.cpp"
     "./src/window/floating_toolbar_skin.h"
     "./src/settings/dictionary_manager.cpp"
@@ -627,6 +665,8 @@ set(SETTINGS_SOURCES
     "./src/cloud/ai_translation.h"
     "./src/cloud/custom_translation.cpp"
     "./src/cloud/custom_translation.h"
+    "./src/cloud/aliyun_mt.cpp"
+    "./src/cloud/aliyun_mt.h"
     "./src/cloud/niutrans_translation.cpp"
     "./src/cloud/niutrans_translation.h"
     "./src/cloud/tencent_tmt.cpp"

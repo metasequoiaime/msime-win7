@@ -41,6 +41,8 @@ Server 当前仍使用引擎的兼容 `InputSession`，尚未迁移公共 `Sessi
 
 **用户想编译验证但没装工具链时，优先用 dev-build-win7 workflow 而不是让用户装 vcpkg**：特性分支 push 自动触发，PR 会自动跑一次，或 `gh workflow run dev-build-win7.yml --ref <分支> -f component=all` 手动触发，然后 `gh run watch` 等它，`gh run download <runId> -n dev-installer-win7` 拿安装包与证书，安装步骤见 [CONTRIBUTING.md](CONTRIBUTING.md#没有本地工具链时dev-build-win7-workflow)。develop 和 main 不触发；版本号带 `-dev.<日期>.<commit>`，与正式发布隔离。
 
+**签名只有一条通道。** 本仓的 `dev-build-win7.yml` 每次运行现场生成自签名证书，公钥随安装包一起作为 `dev-build.cer` 分发，`installer/import-dev-trust.ps1` 按固定 subject 清旧导新。上游的 `nightly.yml` 与 `release.yml` 不随本仓移植，`installer/nightly-signing.cer` 与 `import-nightly-trust.ps1` 留在树里只为上游同步时的文件一致性，本仓不跑那条流水线。
+
 每个组件是独立的 CMake 工程，各自带 `vcpkg.json` 和 preset，从仓库根目录指定 `-S`：
 
 ```powershell

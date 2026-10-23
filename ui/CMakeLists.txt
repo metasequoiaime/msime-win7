@@ -38,6 +38,7 @@ add_library(msimeui STATIC
     src/DeviceResources.cpp
     src/Fonts.cpp
     src/Image.cpp
+    src/ImageMask.cpp
     src/ListView.cpp
     src/Menu.cpp
     src/PagerArrows.cpp
@@ -49,6 +50,7 @@ add_library(msimeui STATIC
     src/TreeView.cpp
     src/Layout.cpp
     src/Scene.cpp
+    src/ScrollAxis.cpp
     src/Theme.cpp
     src/Window.cpp
     src/WindowClass.cpp
@@ -69,8 +71,10 @@ add_library(msimeui STATIC
     include/msimeui/Controls.h
     include/msimeui/DeviceResources.h
     include/msimeui/Fonts.h
+    include/msimeui/ImageMask.h
     include/msimeui/Layout.h
     include/msimeui/Scene.h
+    include/msimeui/ScrollAxis.h
     include/msimeui/Theme.h
     include/msimeui/Types.h
     include/msimeui/Window.h
