@@ -36,6 +36,12 @@ option(MSIME_WIN7 "Target Windows 7 SP1 with the reduced feature set" OFF)
 # server/, ui/ and windows/. The remaining third-party sources are still submodules under vendor/.
 set(MSIME_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
 set(MSIME_ENGINE_DIR "${MSIME_REPO_ROOT}/engine")
+
+# voice_input/voice_overlay_layout.h reaches msimeui::compat, and it is included by the helper
+# executables that do not link msimeui. Publish the GUI framework's headers as a tree-level
+# include directory so every target in this directory can use them.
+include_directories("${MSIME_REPO_ROOT}/ui/include")
+
 set(MSIME_VENDOR_DIR "${MSIME_REPO_ROOT}/vendor")
 
 # 内置皮肤的出厂清单（skins/default/<id>/skin.toml）编进程序：数据目录里那一份缺失或写坏时，
