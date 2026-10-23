@@ -41,10 +41,10 @@
 ; TSF DLL 装在系统目录下：CS2 等开启 Trusted Mode 的游戏只放行「位于系统目录且有代码签名」的
 ; 第三方 in-proc DLL，装在 Program Files 的 DLL 连加载都会被拒，输入法在游戏里根本切不出来。
 ; 本安装器在 x64/ARM64 上以 64 位模式运行（ArchitecturesInstallIn64BitMode），
-; Pascal Script 里访问 {sys} 就是真正的 System32，没有 WOW64 重定向可绕。
-; 不要在这里用 ApplyPathRedirRulesForCurrentProcess：那是 Inno Setup 7 的 support
-; function，windows-2025 runner 的 6.7.1 没有它，ISCC 直接报 Unknown identifier
-; （#434 的告诫，见 installer/README.md）。
+; Inno Setup 6 的 Pascal Script 里访问 {sys} 就是真正的 System32；Inno Setup 7 不再如此，见 TsfRoot64。
+; ApplyPathRedirRulesForCurrentProcess 是 Inno Setup 7 的 support function，
+; windows-2025 runner 的 6.7.1 没有它，不加 #if Ver 判断 ISCC 直接报 Unknown identifier
+; （#925 引入后第一次在 hosted runner 上编安装包就炸了，见 installer/README.md）。
 #define MyTsfRoot64    "{sys}\IME\MetasequoiaIME"
 #define MyTsfRoot32    "{syswow64}\IME\MetasequoiaIME"
 #ifdef LightPackage
@@ -735,10 +735,18 @@ begin
       '现有数据将从这里迁移：' + NewLine + Space + ResolvePreviousDataDir;
 end;
 
-// 本进程能直接访问的 TSF 根目录。64 位模式下 sys 常量不经重定向，直接就是 System32。
+// 本进程能直接访问的 TSF 根目录。Inno Setup 6 的 64 位模式下脚本函数不经重定向，
+// sys 常量直接就是 System32；Inno Setup 7 去掉了这层处理，32 位 Setup 里 DirExists、
+// FindFirst、DelTree 访问 System32 都会被 WOW64 改到 SysWOW64。那样 GetVersionDir 看不到
+// 仍被占用的 64 位版本目录，选中同名目录去覆盖正在加载的 DLL，Restart Manager 就会
+// 列出一长串要关闭的程序；旧的 64 位版本目录也永远清不掉。所以 7 上要换成 Sysnative 路径。
 function TsfRoot64: String;
 begin
+#if Ver >= EncodeVer(7, 0, 0)
+  Result := ApplyPathRedirRulesForCurrentProcess(True, ExpandConstant('{#MyTsfRoot64}'));
+#else
   Result := ExpandConstant('{#MyTsfRoot64}');
+#endif
 end;
 
 function TsfRoot32: String;
@@ -1674,6 +1682,28 @@ begin
   Result := '';
 end;
 
+{ TSF 的语言配置要以原用户身份装进键盘列表：提权进程的 HKCU 指向管理员账户，写进去当前用户看不到
+  （见 server/src/settings/input_method_install.h）。放在最后，失败也不影响装好的文件。}
+procedure RegisterProfileForUser;
+var
+  ErrorCode: Integer;
+  Executable: String;
+begin
+  Executable := ExpandConstant(
+    '{commonpf64}\metasequoiaime\server\MetasequoiaImeSettings.exe');
+  if not FileExists(Executable) then
+  begin
+    Log('settings program missing, skipping keyboard list registration');
+    Exit;
+  end;
+  if not ShellExecAsOriginalUser('', Executable, '--register-profile', '', SW_HIDE,
+    ewWaitUntilTerminated, ErrorCode) then
+    Log('could not start the settings program as the original user: ' +
+      IntToStr(ErrorCode))
+  else
+    Log('keyboard list registration exit code: ' + IntToStr(ErrorCode));
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
@@ -1696,6 +1726,9 @@ begin
     { 偏好写入放在最后：它失败只弹提示，不能挡住上面这些必需步骤。}
     ApplyNetworkChoiceToUserConfig;
 #endif
+    { TSF 的语言配置要以原用户身份装进键盘列表：提权进程的 HKCU 指向管理员账户，写进去当前用户
+      看不到（见 server/src/settings/input_method_install.h）。放在最后，失败也不影响装好的文件。}
+    RegisterProfileForUser;
   end;
 end;
 
