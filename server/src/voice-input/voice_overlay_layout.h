@@ -50,20 +50,24 @@ struct VoiceOverlayAnchor
 // GetDpiForMonitor (shcore, Windows 8.1+) and GetDpiForSystem (user32, Windows 10) are both
 // missing on Windows 7; the Win7 build goes through msimeui::compat instead, which resolves
 // them with GetProcAddress and falls back to the legacy API set.
+#ifdef MSIME_WIN7_LITE
+inline UINT EffectiveMonitorDpi(HMONITOR monitor, UINT fallback)
+{
+    UINT dpi = fallback;
+    if (FAILED(msimeui::compat::GetMonitorDpi(monitor, &dpi)) || dpi == 0)
+        dpi = msimeui::compat::GetSystemDpi();
+    return dpi == 0 ? kVoiceOverlayDefaultDpi : dpi;
+}
+#else
 inline UINT EffectiveMonitorDpi(HMONITOR monitor, UINT fallback)
 {
     UINT dpi_x = fallback;
     UINT dpi_y = fallback;
-#ifdef MSIME_WIN7_LITE
-    const HRESULT hr = msimeui::compat::GetMonitorDpi(monitor, &dpi_x);
-    if (FAILED(hr) || dpi_x == 0)
-        dpi_x = msimeui::compat::GetSystemDpi();
-#else
     if (FAILED(GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y)) || dpi_x == 0)
         dpi_x = GetDpiForSystem();
-#endif
     return dpi_x == 0 ? kVoiceOverlayDefaultDpi : dpi_x;
 }
+#endif
 
 // Safe from a background/control thread. GetForegroundWindow/GetMonitorInfo/GetDpiForMonitor do not
 // require a message pump. The foreground monitor is sampled once per call so rcWork and DPI always
