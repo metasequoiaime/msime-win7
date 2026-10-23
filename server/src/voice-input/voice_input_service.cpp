@@ -1537,7 +1537,6 @@ bool StartRecording()
             g_stream_inline_this_session.store(true);
         }
     }
-#endif
     g_overlay.set_show_transcript(!g_stream_inline_this_session.load());
     g_overlay.set_compact_status(WaveOverlay::CompactStatus::None);
     // 录音中就把取消/确认按钮亮出来。长按 RAlt 时松手事件可能因为切换输入法、
