@@ -36,6 +36,9 @@ target_include_directories(test_voice_lock_recovery
 target_link_libraries(test_voice_lock_recovery
     PRIVATE
     MetasequoiaIme::Voice
+    # voice_input_service.cpp resolves the per-monitor DPI through msimeui::compat, which is
+    # also what keeps the Windows 7 build off the Windows 8.1+/10 entry points.
+    msimeui
     CURL::libcurl
     fmt::fmt
     nlohmann_json::nlohmann_json
@@ -351,7 +354,7 @@ if(WIN32)
     target_include_directories(test_voice_overlay_threading PRIVATE ../src)
     target_compile_features(test_voice_overlay_threading PRIVATE cxx_std_17)
     target_compile_definitions(test_voice_overlay_threading PRIVATE NOMINMAX UNICODE _UNICODE)
-    target_link_libraries(test_voice_overlay_threading PRIVATE tomlplusplus::tomlplusplus d2d1 dwrite dwmapi shcore)
+    target_link_libraries(test_voice_overlay_threading PRIVATE tomlplusplus::tomlplusplus msimeui d2d1 dwrite dwmapi shcore)
     add_test(NAME voice_overlay_threading COMMAND test_voice_overlay_threading)
     set_tests_properties(voice_overlay_threading PROPERTIES TIMEOUT 10)
 endif()
