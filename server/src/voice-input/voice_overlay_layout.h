@@ -12,11 +12,7 @@
 #include "mvi_utils.h"
 
 #include <windows.h>
-#ifdef MSIME_WIN7_LITE
 #include <msimeui/Compat.h>
-#else
-#include <shellscalingapi.h>
-#endif
 #include <algorithm>
 #include <cmath>
 
@@ -47,30 +43,20 @@ struct VoiceOverlayAnchor
 };
 
 // Effective DPI of a monitor, falling back to the system DPI and then to the 96 DIP baseline.
-// GetDpiForMonitor (shcore, Windows 8.1+) and GetDpiForSystem (user32, Windows 10) are both
-// missing on Windows 7; the Win7 build goes through msimeui::compat instead, which resolves
-// them with GetProcAddress and falls back to the legacy API set.
+// msimeui::compat resolves the per-monitor entry points with GetProcAddress and falls back to
+// the legacy API set, so this header stays free of the Windows 8.1+/10 DPI function names: it
+// is included by both targets, and the Windows 7 toolset rejects those names outright.
 inline UINT EffectiveMonitorDpi(HMONITOR monitor, UINT fallback)
 {
-#ifdef MSIME_WIN7_LITE
     UINT dpi = fallback;
     if (FAILED(msimeui::compat::GetMonitorDpi(monitor, &dpi)) || dpi == 0)
     {
         dpi = msimeui::compat::GetSystemDpi();
     }
     return dpi == 0 ? kVoiceOverlayDefaultDpi : dpi;
-#else
-    UINT dpi_x = fallback;
-    UINT dpi_y = fallback;
-    if (FAILED(GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y)) || dpi_x == 0)
-    {
-        dpi_x = GetDpiForSystem();
-    }
-    return dpi_x == 0 ? kVoiceOverlayDefaultDpi : dpi_x;
-#endif
 }
 
-// Safe from a background/control thread. GetForegroundWindow/GetMonitorInfo/GetDpiForMonitor do not
+// Safe from a background/control thread. Foreground and monitor queries do not
 // require a message pump. The foreground monitor is sampled once per call so rcWork and DPI always
 // describe the same display, including displays with negative virtual-screen coordinates.
 inline VoiceOverlayAnchor CaptureVoiceOverlayAnchor()
