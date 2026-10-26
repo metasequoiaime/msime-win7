@@ -48,7 +48,7 @@ jobs:
     # Only the schedule honours the "no new commits" gate: a manual run always
     # builds, whoever clicked it explicitly asked for a build.
     if: ${{ github.event_name == 'schedule' }}
-    runs-on: ubuntu-24.04
+    runs-on: depot-ubuntu-24.04
     timeout-minutes: 10
     outputs:
       changed: ${{ steps.compare.outputs.changed }}
@@ -87,7 +87,7 @@ jobs:
     name: TSF ${{ matrix.name }}
     needs: gate
     if: ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.changed != 'false' }}
-    runs-on: windows-2025
+    runs-on: depot-windows-2025-8
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -154,7 +154,7 @@ jobs:
     name: Server
     needs: gate
     if: ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.changed != 'false' }}
-    runs-on: windows-2025
+    runs-on: depot-windows-2025-8
     timeout-minutes: 90
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -541,7 +541,7 @@ jobs:
     # (nothing to build) makes every downstream job "skipped", which is the channel working as
     # intended and files nothing.
     if: ${{ failure() || cancelled() == false && (needs.tip.result == 'failure' || needs.server.result == 'failure' || needs.package.result == 'failure') }}
-    runs-on: ubuntu-24.04
+    runs-on: depot-ubuntu-24.04
     steps:
       - name: File or update the nightly failure issue
         env:
