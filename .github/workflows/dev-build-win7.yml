@@ -229,7 +229,7 @@ jobs:
     # needs both TSF architectures and the Server, all from this same run (the Win7 TSF
     # build is not interchangeable with the v145 one from dev-build.yml).
     if: ${{ !cancelled() && needs.tip.result == 'success' && needs.server.result == 'success' && (inputs.component || 'all') == 'all' }}
-    runs-on: windows-2025
+    runs-on: depot-windows-2025-8
     timeout-minutes: 60
     steps:
       - name: Check out source
